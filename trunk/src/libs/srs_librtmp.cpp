@@ -1507,7 +1507,14 @@ int srs_h264_write_raw_frames(srs_rtmp_t rtmp, char* frames, int frames_size, ui
         if (frame_size <= 0) {
             continue;
         }
-        
+        // 除sps/pps，其他slice不解析，当一个slice发送
+        uint8_t nal_unit_type = (char)frame[0] & 0x1f;
+        if (nal_unit_type != SrsAvcNaluTypeSPS && nal_unit_type != SrsAvcNaluTypePPS)
+        {
+            int left = stream->left();
+            stream->skip(left);
+            frame_size += left;
+        }
         // it may be return error, but we must process all packets.
         if ((ret = srs_write_h264_raw_frame(context, frame, frame_size, dts, pts)) != ERROR_SUCCESS) {
             error_code_return = ret;
